@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T&G Uniform Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        input[type=color] { -webkit-appearance: none; border: 2px solid #e2e8f0; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; padding: 2px; background: white; }
+        input[type=color]::-webkit-color-swatch-wrapper { padding: 0; border-radius: 6px; }
+        input[type=color]::-webkit-color-swatch { border: none; border-radius: 6px; }
+        .eyedropper-btn { cursor: pointer; transition: all 0.2s; }
+        .eyedropper-btn:hover { background: #e0e7ff; color: #4338ca; }
+        .img-sample-area { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s; background: #f8fafc; }
+        .img-sample-area:hover { border-color: #6366f1; background: #eef2ff; }
+        .img-sample-area img { max-height: 80px; object-fit: contain; border-radius: 8px; margin: 0 auto; cursor: crosshair; }
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #cbd5e1; border-radius: 24px; transition: 0.3s; }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+        input:checked + .toggle-slider { background: #6366f1; }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+        #imgCanvas { display: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+<canvas id="imgCanvas"></canvas>
+
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+            <div class="bg-slate-900 text-white w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg">T&amp;G</div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-900">نظام تكوين الطلبات الموحد</h1>
+                <p class="text-xs text-slate-500 font-medium">نسخة HTML/JS المباشرة</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <label class="text-sm font-bold text-slate-600">الشركة:</label>
+            <select id="companySelect" class="bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none w-48">
+                <option value="T&G">T&amp;G</option>
+                <option value="Phoenix">Phoenix</option>
+                <option value="Tsunami">Tsunami</option>
+                <option value="U">U</option>
+                <option value="Classy">Classy</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+        <!-- Col 1: Categories + Products -->
+        <div class="md:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+            <div class="bg-slate-50 p-4 border-b border-slate-200 font-bold text-sm">1. اختيار المنتج</div>
+            <div id="categoryList" class="flex-1 overflow-y-auto p-2 space-y-1 max-h-[340px] md:max-h-[560px] custom-scrollbar"></div>
+            <div class="p-4 bg-slate-50 border-t">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">المنتج المحدد:</label>
+                <select id="productSelect" onchange="state.product=this.value" class="w-full p-2.5 text-sm border border-slate-200 rounded-xl font-bold bg-white focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+            </div>
+        </div>
+
+        <!-- Col 2: Customization -->
+        <div class="md:col-span-8 space-y-6">
+
+            <!-- Specs & Colors -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+                <div class="font-bold text-slate-800 border-b pb-3">2. المواصفات والألوان</div>
+
+                <!-- Sleeve row (T-shirts only) -->
+                <div id="tshirtDetails" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">نوع الكم</label>
+                        <div class="flex gap-1 p-1 bg-slate-100 rounded-xl">
+                            <button onclick="setSleeve('نص كم')" id="sleeve-half" class="flex-1 py-2 text-xs font-bold rounded-lg bg-white shadow-sm border border-slate-200 text-indigo-700">نص كم</button>
+                            <button onclick="setSleeve('كم كامل')" id="sleeve-full" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:bg-slate-200">كم كامل</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">نوع القصة</label>
+                        <select id="patternSelect" onchange="togglePatternDetails()" class="w-full p-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 font-bold outline-none">
+                            <option value="منغير قصة">بدون قصة</option>
+                            <option value="قصة">بقصة مخصصة</option>
+                            <option value="تغير ياقة وسورة فقط">تغيير الياقة والأسورة</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Custom Pattern box -->
+                <div id="patternDetailsBox" style="display:none" class="space-y-3 p-4 bg-indigo-50/40 border border-indigo-100 rounded-2xl">
+                    <label class="block text-xs font-bold text-slate-500 uppercase">تفاصيل القصة المخصصة</label>
+                    <div class="relative">
+                        <textarea id="patternDetails" class="w-full p-4 text-sm border-2 border-indigo-100 rounded-xl bg-white min-h-[90px] outline-none" placeholder="اشرح القصة هنا..."></textarea>
+                        <button onclick="startVoice('patternDetails')" class="absolute left-2 bottom-2 p-2 bg-white border rounded-lg text-slate-400 hover:text-indigo-600 shadow-sm">🎤</button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">لون القصة</label>
+                        <div id="cb_patternColor"></div>
+                    </div>
+                </div>
+
+                <!-- Collar & Cuff Colors box -->
+                <div id="collarCuffBox" style="display:none" class="space-y-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">لون التيشرت</label>
+                        <div id="cb_mainColor2"></div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">لون الياقة</label>
+                        <div id="cb_collarColor"></div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">لون الأسورة</label>
+                        <div id="cb_cuffColor"></div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-sm font-bold text-slate-700">تغيير لون الكم نفس لون الياقة والأسورة</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sleeveMatchToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-sm font-bold text-slate-700">تغيير البادنا نفس لون الياقة والأسورة</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="padenaMatchToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Default main color (no pattern) -->
+                <div id="mainColorBox">
+                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">لون المنتج</label>
+                    <div id="cb_mainColor"></div>
+                </div>
+            </div>
+
+            <!-- Logo -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+                <div class="font-bold text-slate-800 border-b pb-3">3. اللوجو والعلامات</div>
+                <div class="flex gap-2 p-1 bg-slate-100 rounded-xl max-w-[200px]">
+                    <button onclick="setLogo('تطريز')" id="logo-tatri" class="flex-1 py-2 text-xs font-bold rounded-lg bg-white shadow-sm border border-slate-200 text-indigo-700">تطريز</button>
+                    <button onclick="setLogo('طباعة')" id="logo-tabaa" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:bg-slate-200">طباعة</button>
+                </div>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">لوجو الصدر</label>
+                        <textarea id="logoChest" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[75px]" placeholder="مثال: لوجو دائري جهة اليسار..."></textarea>
+                        <button onclick="startVoice('logoChest')" class="absolute left-2 bottom-2 p-2 bg-white border rounded-lg text-slate-400">🎤</button>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">لوجو الظهر</label>
+                        <textarea id="logoBack" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[75px]" placeholder="مثال: كلمة الشركة بخط كبير..."></textarea>
+                        <button onclick="startVoice('logoBack')" class="absolute left-2 bottom-2 p-2 bg-white border rounded-lg text-slate-400">🎤</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="bg-slate-900 rounded-2xl p-6 flex flex-col md:flex-row gap-4">
+                <button onclick="copyMockup()" class="flex-1 bg-white text-slate-900 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-100 transition-all">
+                    📄 نسخ التفاصيل
+                </button>
+                <button onclick="sendWA('201094526896')" class="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all">
+                    💬 إرسال واتساب (عبدو)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const categories = [
+    { name: "👕 التيشرتات",        isTshirt: true,  products: ["بولو بكم","بولو نص كم","بولو ميلتون","راوند بكم","راوند نص كم","راوند ميلتون"] },
+    { name: "👖 البنطلونات",       isTshirt: false, products: ["بنطلون كلاسيك","بنطلون باجي","بنطلون شيف ورك","بنطلون ميلتون","بنطلون جينز","بنطلون قطن"] },
+    { name: "🧥 الجواكيت والهودي", isTshirt: false, products: ["جاكيت","جاكيت شيف","سويتشرت","هودي","هودي أوفر سايز"] },
+    { name: "👔 القمصان",          isTshirt: false, products: ["قميص"] },
+    { name: "🦺 الفيست",           isTshirt: false, products: ["فيست","فيست أمان","فيست مهندسين","فيست عمال"] },
+    { name: "👨‍🔧 يونيفورم العمال",  isTshirt: false, products: ["أفرول","بدل عمال","بدل عمال نظافة"] },
+    { name: "🧑‍🍳 يونيفورم الشيف",  isTshirt: false, products: ["جاكيت شيف","بنطلون شيف","كاب شيف"] },
+    { name: "🏥 يونيفورم طبي",     isTshirt: false, products: ["بالطو","سكراب"] },
+    { name: "🎓 أطقم",             isTshirt: false, products: ["طقم أطفال","طقم أولاد","طقم بنات"] },
+    { name: "🧢 إكسسوارات",        isTshirt: false, products: ["كاب","مرايل"] },
+    { name: "🧶 ملابس إضافية",     isTshirt: false, products: ["بلوفر"] },
+];
+
+let state = {
+    category: categories[0],
+    product: categories[0].products[0],
+    sleeve: "نص كم",
+    logo: "تطريز",
+    pattern: "منغير قصة",
+    colors: {}
+};
+
+// image data store per color block
+const imgDataStore = {};
+
+// ============================================================
+// COLOR BLOCK BUILDER
+// ============================================================
+function buildColorBlock(containerId, colorId, defaultVal) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const hasDropper = !!window.EyeDropper;
+    container.innerHTML = `
+        <div class="flex items-center gap-3 flex-wrap mb-2">
+            <input type="color" id="${colorId}" value="${defaultVal}">
+            <span id="${colorId}_hex" class="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">${defaultVal}</span>
+            ${hasDropper ? `<button onclick="pickEyedropper('${colorId}')" class="eyedropper-btn flex items-center gap-1 px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-600 border border-slate-200">🔍 قطارة</button>` : ''}
+        </div>
+        <div class="img-sample-area" onclick="document.getElementById('imgInput_${colorId}').click()" title="ارفع صورة لأخذ اللون منها">
+            <input type="file" id="imgInput_${colorId}" accept="image/*" style="display:none" onchange="loadSampleImage(event,'${colorId}')">
+            <div id="imgPreview_${colorId}">
+                <div class="text-2xl">🖼️</div>
+                <div class="text-xs text-slate-400 font-bold">ارفع صورة لأخذ لون منها</div>
+            </div>
+        </div>
+    `;
+    state.colors[colorId] = defaultVal;
+    const inp = document.getElementById(colorId);
+    inp.addEventListener('input', () => {
+        state.colors[colorId] = inp.value;
+        document.getElementById(`${colorId}_hex`).textContent = inp.value;
+    });
+}
+
+function initAllColorBlocks() {
+    buildColorBlock('cb_mainColor',    'mainColor',    '#1e293b');
+    buildColorBlock('cb_mainColor2',   'mainColor2',   '#1e293b');
+    buildColorBlock('cb_collarColor',  'collarColor',  '#e2e8f0');
+    buildColorBlock('cb_cuffColor',    'cuffColor',    '#e2e8f0');
+    buildColorBlock('cb_patternColor', 'patternColor', '#6366f1');
+}
+
+// ============================================================
+// EYEDROPPER
+// ============================================================
+async function pickEyedropper(id) {
+    try {
+        const dropper = new EyeDropper();
+        const result = await dropper.open();
+        setColor(id, result.sRGBHex);
+    } catch(e) {}
+}
+
+function setColor(id, hex) {
+    const inp = document.getElementById(id);
+    if(inp) inp.value = hex;
+    state.colors[id] = hex;
+    const hexEl = document.getElementById(`${id}_hex`);
+    if(hexEl) hexEl.textContent = hex;
+}
+
+// ============================================================
+// IMAGE SAMPLER
+// ============================================================
+function loadSampleImage(event, id) {
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        imgDataStore[id] = e.target.result;
+        const previewDiv = document.getElementById(`imgPreview_${id}`);
+        previewDiv.innerHTML = `
+            <img src="${e.target.result}" id="sampleImg_${id}" class="max-h-20 rounded-lg mx-auto" title="اضغط على اللون الذي تريده">
+            <div class="text-xs text-indigo-600 font-bold mt-1">اضغط على اللون المطلوب ☝️</div>
+        `;
+        document.getElementById(`sampleImg_${id}`).addEventListener('click', ev => pickColorFromImage(ev, id));
+    };
+    reader.readAsDataURL(file);
+}
+
+function pickColorFromImage(ev, id) {
+    const imgSrc = imgDataStore[id];
+    if(!imgSrc) return;
+    const imgEl = ev.target;
+    const canvas = document.getElementById('imgCanvas');
+    const tempImg = new Image();
+    tempImg.onload = function() {
+        canvas.width  = tempImg.naturalWidth;
+        canvas.height = tempImg.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(tempImg, 0, 0);
+        const rect   = imgEl.getBoundingClientRect();
+        const scaleX = tempImg.naturalWidth  / imgEl.offsetWidth;
+        const scaleY = tempImg.naturalHeight / imgEl.offsetHeight;
+        const x = Math.round((ev.clientX - rect.left)  * scaleX);
+        const y = Math.round((ev.clientY - rect.top)   * scaleY);
+        const px  = ctx.getImageData(x, y, 1, 1).data;
+        const hex = '#' + [px[0],px[1],px[2]].map(v => v.toString(16).padStart(2,'0')).join('');
+        setColor(id, hex);
+    };
+    tempImg.src = imgSrc;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+    const catList = document.getElementById('categoryList');
+    categories.forEach((cat, idx) => {
+        const btn = document.createElement('button');
+        const isFirst = idx === 0;
+        btn.className = `w-full text-right p-3 text-sm rounded-lg font-bold transition-all ${isFirst ? 'bg-indigo-50 text-indigo-700 border-r-4 border-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`;
+        btn.innerText = cat.name;
+        btn.onclick = () => selectCategory(cat, btn);
+        catList.appendChild(btn);
+    });
+    initAllColorBlocks();
+    updateProducts();
+}
+
+function selectCategory(cat, btn) {
+    state.category = cat;
+    document.querySelectorAll('#categoryList button').forEach(b => {
+        b.className = 'w-full text-right p-3 text-sm rounded-lg font-bold text-slate-600 hover:bg-slate-50 transition-all';
+    });
+    btn.className = 'w-full text-right p-3 text-sm rounded-lg font-bold bg-indigo-50 text-indigo-700 border-r-4 border-indigo-600 transition-all';
+    updateProducts();
+}
+
+function updateProducts() {
+    const select = document.getElementById('productSelect');
+    select.innerHTML = '';
+    state.category.products.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p; opt.innerText = p;
+        select.appendChild(opt);
+    });
+    state.product = state.category.products[0];
+    document.getElementById('tshirtDetails').style.display = state.category.isTshirt ? 'grid' : 'none';
+    togglePatternDetails();
+}
+
+// ============================================================
+// SLEEVE / LOGO
+// ============================================================
+function setSleeve(v) {
+    state.sleeve = v;
+    const a = "flex-1 py-2 text-xs font-bold rounded-lg bg-white shadow-sm border border-slate-200 text-indigo-700";
+    const i = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:bg-slate-200";
+    document.getElementById('sleeve-half').className = v === 'نص كم'   ? a : i;
+    document.getElementById('sleeve-full').className = v === 'كم كامل' ? a : i;
+}
+
+function setLogo(v) {
+    state.logo = v;
+    const a = "flex-1 py-2 text-xs font-bold rounded-lg bg-white shadow-sm border border-slate-200 text-indigo-700";
+    const i = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:bg-slate-200";
+    document.getElementById('logo-tatri').className = v === 'تطريز' ? a : i;
+    document.getElementById('logo-tabaa').className = v === 'طباعة' ? a : i;
+}
+
+// ============================================================
+// PATTERN TOGGLE
+// ============================================================
+function togglePatternDetails() {
+    if (!state.category.isTshirt) {
+        document.getElementById('patternDetailsBox').style.display = 'none';
+        document.getElementById('collarCuffBox').style.display     = 'none';
+        document.getElementById('mainColorBox').style.display      = 'block';
+        return;
+    }
+    state.pattern = document.getElementById('patternSelect').value;
+    const isCustom = state.pattern === "قصة";
+    const isCollar = state.pattern === "تغير ياقة وسورة فقط";
+    const isNone   = state.pattern === "منغير قصة";
+
+    document.getElementById('patternDetailsBox').style.display = isCustom           ? 'block' : 'none';
+    document.getElementById('collarCuffBox').style.display     = (isCollar||isCustom)? 'block' : 'none';
+    document.getElementById('mainColorBox').style.display      = isNone             ? 'block' : 'none';
+}
+
+// ============================================================
+// BUILD MESSAGE
+// ============================================================
+function getC(id) { return state.colors[id] || (document.getElementById(id) ? document.getElementById(id).value : '') || ''; }
+
+function buildMessage() {
+    const company      = document.getElementById('companySelect').value;
+    const logoChest    = document.getElementById('logoChest').value;
+    const logoBack     = document.getElementById('logoBack').value;
+    const patternNotes = document.getElementById('patternDetails').value;
+
+    let msg = `*تفاصيل موك اب جديد*\n\n`;
+    msg += `🏢 الشركة: ${company}\n`;
+    msg += `📦 المنتج: ${document.getElementById('productSelect').value} (${state.category.name})\n`;
+
+    if (state.category.isTshirt) {
+        msg += `👕 الكم: ${state.sleeve}\n`;
+        msg += `✂️ القصة: ${state.pattern}\n`;
+        if (state.pattern === "قصة") {
+            if (patternNotes)               msg += `📝 تفاصيل القصة: ${patternNotes}\n`;
+            if (getC('patternColor'))        msg += `🎨 لون القصة: ${getC('patternColor')}\n`;
+        }
+        if (state.pattern !== "منغير قصة") {
+            const mc = getC('mainColor2') || getC('mainColor');
+            msg += `🎨 لون التيشرت: ${mc}\n`;
+            msg += `🎨 لون الياقة: ${getC('collarColor')}\n`;
+            msg += `🎨 لون الأسورة: ${getC('cuffColor')}\n`;
+            if (document.getElementById('sleeveMatchToggle')?.checked)
+                msg += `✅ لون الكم: نفس لون الياقة والأسورة\n`;
+            if (document.getElementById('padenaMatchToggle')?.checked)
+                msg += `✅ البادنا: نفس لون الياقة والأسورة\n`;
+        } else {
+            msg += `🎨 اللون: ${getC('mainColor')}\n`;
+        }
+    } else {
+        msg += `🎨 اللون: ${getC('mainColor')}\n`;
+    }
+
+    msg += `🪡 اللوجو: ${state.logo}\n`;
+    if (logoChest) msg += `📍 الصدر: ${logoChest}\n`;
+    if (logoBack)  msg += `📍 الظهر: ${logoBack}\n`;
+    return msg;
+}
+
+// ============================================================
+// SEND / COPY
+// ============================================================
+function sendWA(phone) {
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(buildMessage())}`, '_blank');
+}
+
+function copyMockup() {
+    const text = buildMessage();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => alert('تم نسخ التفاصيل بنجاح!'))
+            .catch(() => fallbackCopy(text));
+    } else { fallbackCopy(text); }
+}
+
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); alert('تم نسخ التفاصيل بنجاح!'); }
+    catch(e) { alert('تعذّر النسخ:\n\n' + text); }
+    document.body.removeChild(ta);
+}
+
+// ============================================================
+// VOICE
+// ============================================================
+function startVoice(id) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return alert("المتصفح لا يدعم الإدخال الصوتي");
+    const r = new SR(); r.lang = 'ar-SA';
+    r.onresult = e => { document.getElementById(id).value += ' ' + e.results[0][0].transcript; };
+    r.start();
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+init();
+</script>
+</body>
+</html>
